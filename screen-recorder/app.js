@@ -1,3 +1,34 @@
+let stream = null;
+
+const getdiviceButton = document.getElementById('get-device-button');
+getdiviceButton.addEventListener('click', async () => {
+  stream = await getStream();
+
+  console.log('stream:', stream);
+});
+
+async function getStream() {
+  const screenStream = await getScreenStreamByUserDevice();
+  const audioStream = await getAudioStreamByUserDevice();
+
+  const stream = new MediaStream([
+    ...screenStream.getTracks(),
+    ...audioStream.getTracks(),
+  ]);
+  return stream;
+}
+
+const recordButton = document.getElementById('record-button');
+recordButton.addEventListener('click', () => {
+  if (stream) {
+    console.log('recording...');
+    recordStream(stream);
+  }
+});
+
+const recordStopButton = document.getElementById('record-stop-button');
+recordStopButton.addEventListener('click', stopRecording);
+
 // https://dev.to/antopiras89/using-the-mediastream-web-api-to-record-screen-camera-and-audio-1c4n
 
 async function getUserMedia(mediaConstraints) {
@@ -7,8 +38,8 @@ async function getUserMedia(mediaConstraints) {
 
 // ------------------------------------------------------------------
 
-async function captureScreen() {
-  let mediaConstraints = {
+async function getScreenStreamByUserDevice() {
+  const mediaConstraints = {
     video: {
       cursor: 'always',
       resizeMode: 'crop-and-scale',
@@ -21,24 +52,38 @@ async function captureScreen() {
   return screenStream;
 }
 
-// ------------------------------------------------------------------
-
-let recorder = null;
-
-async function recordStream() {
+async function getAudioStreamByUserDevice() {
   const options = {
-    video: {
-      width: 1280,
-      height: 720,
-    },
     audio: {
       echoCancellation: true,
       noiseSuppression: true,
       sampleRate: 44100,
     },
+    video: false,
   };
 
-  const stream = await getUserMedia(options);
+  const audioStream = await getUserMedia(options);
+  return audioStream;
+}
+
+// ------------------------------------------------------------------
+
+let recorder = null;
+
+async function recordStream(stream) {
+  // const options = {
+  //   video: {
+  //     width: 1280,
+  //     height: 720,
+  //   },
+  //   audio: {
+  //     echoCancellation: true,
+  //     noiseSuppression: true,
+  //     sampleRate: 44100,
+  //   },
+  // };
+
+  // const stream = await getUserMedia(options);
   recorder = new MediaRecorder(stream);
   let chunks = [];
 
@@ -57,6 +102,13 @@ async function recordStream() {
     const blobUrl = URL.createObjectURL(blob);
 
     console.log(blobUrl);
+
+    //
+    const anchor = document.createElement('a');
+    anchor.setAttribute('href', blobUrl);
+    anchor.setAttribute('download', `recording.webm`);
+    anchor.innerText = 'Download';
+    document.body.append(anchor);
   };
 
   recorder.start(200);
@@ -65,29 +117,8 @@ async function recordStream() {
 // ------------------------------------------------------------------
 
 function stopRecording() {
+  console.log('stop recording!');
   recorder.stream.getTracks().forEach((track) => track.stop());
 }
 
 // ------------------------------------------------------------------
-
-async function init() {
-  const screenStream = await captureScreen();
-
-  const options = {
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      sampleRate: 44100,
-    },
-    video: false,
-  };
-
-  const audioStream = await getUserMedia(options);
-
-  const stream = new MediaStream([
-    ...screenStream.getTracks(),
-    ...audioStream.getTracks(),
-  ]);
-}
-
-init();
