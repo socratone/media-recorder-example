@@ -8,6 +8,11 @@ body {
   align-items: center;
   margin: 0;
   height: 100vh;
+  font-size: 1.6rem;
+}
+
+ul {
+  padding: 0;
 }
 
 button {

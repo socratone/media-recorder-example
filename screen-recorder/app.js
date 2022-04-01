@@ -1,11 +1,26 @@
-let stream = null;
+// https://dev.to/antopiras89/using-the-mediastream-web-api-to-record-screen-camera-and-audio-1c4n
 
+let stream = null;
+let recorder = null;
+
+// 녹음 장치 설정
 const getdiviceButton = document.getElementById('get-device-button');
 getdiviceButton.addEventListener('click', async () => {
   stream = await getStream();
-
-  console.log('stream:', stream);
 });
+
+// 녹음
+const recordButton = document.getElementById('record-button');
+recordButton.addEventListener('click', () => {
+  if (stream) {
+    console.log('recording...');
+    recordStream(stream);
+  }
+});
+
+// 녹음 중지
+const recordStopButton = document.getElementById('record-stop-button');
+recordStopButton.addEventListener('click', stopRecording);
 
 async function getStream() {
   const screenStream = await getScreenStreamByUserDevice();
@@ -17,26 +32,6 @@ async function getStream() {
   ]);
   return stream;
 }
-
-const recordButton = document.getElementById('record-button');
-recordButton.addEventListener('click', () => {
-  if (stream) {
-    console.log('recording...');
-    recordStream(stream);
-  }
-});
-
-const recordStopButton = document.getElementById('record-stop-button');
-recordStopButton.addEventListener('click', stopRecording);
-
-// https://dev.to/antopiras89/using-the-mediastream-web-api-to-record-screen-camera-and-audio-1c4n
-
-async function getUserMedia(mediaConstraints) {
-  const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-  return stream;
-}
-
-// ------------------------------------------------------------------
 
 async function getScreenStreamByUserDevice() {
   const mediaConstraints = {
@@ -53,7 +48,7 @@ async function getScreenStreamByUserDevice() {
 }
 
 async function getAudioStreamByUserDevice() {
-  const options = {
+  const mediaConstraints = {
     audio: {
       echoCancellation: true,
       noiseSuppression: true,
@@ -62,28 +57,13 @@ async function getAudioStreamByUserDevice() {
     video: false,
   };
 
-  const audioStream = await getUserMedia(options);
+  const audioStream = await navigator.mediaDevices.getUserMedia(
+    mediaConstraints
+  );
   return audioStream;
 }
 
-// ------------------------------------------------------------------
-
-let recorder = null;
-
 async function recordStream(stream) {
-  // const options = {
-  //   video: {
-  //     width: 1280,
-  //     height: 720,
-  //   },
-  //   audio: {
-  //     echoCancellation: true,
-  //     noiseSuppression: true,
-  //     sampleRate: 44100,
-  //   },
-  // };
-
-  // const stream = await getUserMedia(options);
   recorder = new MediaRecorder(stream);
   let chunks = [];
 
@@ -101,24 +81,19 @@ async function recordStream(stream) {
     chunks = [];
     const blobUrl = URL.createObjectURL(blob);
 
-    console.log(blobUrl);
-
-    //
     const anchor = document.createElement('a');
     anchor.setAttribute('href', blobUrl);
-    anchor.setAttribute('download', `recording.webm`);
+    anchor.setAttribute('download', `new-video.webm`);
     anchor.innerText = 'Download';
-    document.body.append(anchor);
+
+    const list = document.querySelector('.recordings');
+    list.append(anchor);
   };
 
   recorder.start(200);
 }
 
-// ------------------------------------------------------------------
-
 function stopRecording() {
   console.log('stop recording!');
   recorder.stream.getTracks().forEach((track) => track.stop());
 }
-
-// ------------------------------------------------------------------
